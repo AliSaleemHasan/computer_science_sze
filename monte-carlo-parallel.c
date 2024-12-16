@@ -11,7 +11,7 @@ double mu = 0.03;
 double starting_price = 100.0;
 double sigma = 0.5;
 
-Stats NStepFuturePrice(int D, int H, int M)
+Stats NStepFuturePrice(int D, int H, int M, int interation)
 {
     double s0 = 100.0, total_price = 0.0, sum_of_squares = 0.0;
     double deltaT = 1.0 / 252.0; // one day
@@ -20,15 +20,13 @@ Stats NStepFuturePrice(int D, int H, int M)
     double min_price = DBL_MAX, max_price = -DBL_MAX, last_price = 0.0;
     int count = 0;
 
-    double start = get_time();
     for (int i = 0; i < D; i++)
     {
         s0 = get_price_for_day(H, M, s0, deltaT, mu, sigma);
-        // update_stats(s0, &total_price, &sum_of_squares, &min_price, &max_price, &count);
+        update_stats(s0, &total_price, &sum_of_squares, &min_price, &max_price, &count);
         if (i + 1 == D)
             last_price = s0;
     }
-    double end = get_time();
 
     // printf("thread number %d just finished it's execution in %f \n", omp_get_thread_num(), end - start);
     // Final stats after all iterations
@@ -49,7 +47,7 @@ double monteCarloParallized(InputArgs inputs)
     for (int i = 0; i < inputs.iterations; i++)
     {
 
-        s = NStepFuturePrice(inputs.Days, inputs.Hours, inputs.Minutes);
+        s = NStepFuturePrice(inputs.Days, inputs.Hours, inputs.Minutes, i);
 
         // printf("Thread working on i = {%d} iteration is %d \n", i, omp_get_thread_num());
 

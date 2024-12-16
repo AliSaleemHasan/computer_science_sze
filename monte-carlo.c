@@ -18,7 +18,6 @@ Stats NStepFuturePrice(int D, int H, int M, FILE *file, int iteration, int save_
     double min_price = DBL_MAX, max_price = -DBL_MAX, last_price;
     int count = 0;
 
-    double start = get_time();
     for (int i = 0; i < D; i++)
     {
         s0 = get_price_for_day(H, M, s0, deltaT, mu, sigma);
@@ -26,13 +25,11 @@ Stats NStepFuturePrice(int D, int H, int M, FILE *file, int iteration, int save_
         if (i + 1 == D)
             last_price = s0;
     }
-    double end = get_time();
-
-    printf("it took %f time for this iteration to finish \n", end - start);
 
     // Final stats after all iterations
     Stats s = calculate_final_stats(iteration, total_price, sum_of_squares, min_price, max_price, count, last_price);
     if (save_stats == 1)
+#pragma omp critical
         write_to_csv(file, s, iteration + 1);
 
     return s;
@@ -54,7 +51,6 @@ double monteCarlo(int D, int H, int M, int iterations, char action, int strike_p
     Stats s;
     for (i = 0; i < iterations; i++)
     {
-        printf("iteration number %d\n", i);
         s = NStepFuturePrice(D, H, M, file, i, save_stats);
         payoff = calculatePayoff(s.last_price, strike_price, action);
 
