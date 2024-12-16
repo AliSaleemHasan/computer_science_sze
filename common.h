@@ -23,7 +23,7 @@ double get_time()
 
 void seed_random()
 {
-    unsigned int seed = getpid() ^ (unsigned int)time(NULL);
+    unsigned int seed = getpid() ^ (unsigned int)time(NULL) ^ (unsigned int)clock();
     srand(seed);
 }
 
@@ -37,6 +37,7 @@ void seed_random()
 
 typedef struct
 {
+    int Day;
     double mean;
     double min;
     double max;
@@ -161,7 +162,7 @@ Stats calculate_final_stats(int iteration, double total_price, double sum_of_squ
     double mean = total_price / count;
     double variance = (sum_of_squares / count) - (mean * mean);
     double std_dev = sqrt(variance);
-    Stats stats = {mean, min_price, max_price, std_dev, last_price};
+    Stats stats = {iteration + 1, mean, min_price, max_price, std_dev, last_price};
     return stats;
 }
 
