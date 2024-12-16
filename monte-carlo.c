@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <omp.h>
 #include "string.h"
 #include "common.h"
 #include "float.h"
@@ -12,7 +10,7 @@ double mu = 0.03;
 double starting_price = 100.0;
 double sigma = 0.5;
 
-Stats NStepFuturePrice(int D, int H, int M, FILE *file, int iteration, int save_stats)
+Stats NStepFuturePrice(int D, int H, int M, FILE *file, int iteration)
 {
     double s0 = starting_price, total_price = 0.0, sum_of_squares = 0.0;
     double min_price = DBL_MAX, max_price = -DBL_MAX, last_price;
@@ -26,33 +24,30 @@ Stats NStepFuturePrice(int D, int H, int M, FILE *file, int iteration, int save_
             last_price = s0;
     }
 
-    // Final stats after all iterations
+    // Final stats for one path (full trading year)
     Stats s = calculate_final_stats(iteration, total_price, sum_of_squares, min_price, max_price, count, last_price);
-    if (save_stats == 1)
+    if (file)
 #pragma omp critical
         write_to_csv(file, s, iteration + 1);
 
     return s;
 }
 
-double monteCarlo(int D, int H, int M, int iterations, char action, int strike_price, int save_stats)
+double monteCarlo(InputArgs inputs)
 {
-    FILE *file = fopen("stats.csv", "w");
-    if (!file)
-    {
-        perror("Failed to open file");
-        return 1;
-    }
+    FILE *file = create_statistcs_file(inputs.save_stats);
 
-    fprintf(file, "Day,Mean,Min,Max,Std Dev,End Price\n");
-
-    double avg = 0.0, payoff = 0.0, counter = 0.0;
-    int i;
+    double avg = 0.0, payoff;
+    int i, counter = 0;
     Stats s;
-    for (i = 0; i < iterations; i++)
+
+    omp_set_num_threads(500);
+#pragma omp parallel if (inputs.parallel)
+#pragma omp for schedule(auto) firstprivate(inputs) private(payoff, s) reduction(+ : avg, counter)
+    for (i = 0; i < inputs.iterations; i++)
     {
-        s = NStepFuturePrice(D, H, M, file, i, save_stats);
-        payoff = calculatePayoff(s.last_price, strike_price, action);
+        s = NStepFuturePrice(inputs.Days, inputs.Hours, inputs.Minutes, file, i);
+        payoff = calculatePayoff(s.last_price, inputs.strike_price, inputs.call_put);
 
         if (isfinite(payoff))
         {
@@ -66,15 +61,11 @@ double monteCarlo(int D, int H, int M, int iterations, char action, int strike_p
 
 int main(int argc, char **argv)
 {
-
     seed_random();
-    InputArgs args = process_input(argc, argv);
-
+    InputArgs inputs = process_input(argc, argv);
     double start = get_time();
-    printf("avg payoff is %f \n", monteCarlo(args.Days, args.Hours, args.Minutes, args.iterations, args.call_put, args.strike_price, 1));
+    printf("avg payoff is %f \n", monteCarlo(inputs));
     double end = get_time();
-
     printf("time elapsed : %f  \n", end - start);
-
     return 0;
 }

@@ -145,6 +145,14 @@ void write_to_csv(FILE *file, Stats stats, int day)
     ###################################################
 */
 
+FILE *create_statistcs_file(int save_stats)
+{
+    FILE *file = (save_stats) ? fopen("stats.csv", "w") : NULL;
+    if (file)
+        fprintf(file, "Day,Mean,Min,Max,Std Dev,End Price\n");
+    return file;
+}
+
 void update_stats(double price, double *total_price, double *sum_of_squares, double *min_price, double *max_price, int *count)
 {
     *total_price += price;
@@ -190,6 +198,7 @@ double get_price_for_day(int H, int M, double s0, double deltaT, double mu, doub
 
 typedef struct
 {
+    int parallel;
     double strike_price;
     int iterations;
     int save_stats;
@@ -201,20 +210,22 @@ typedef struct
 
 InputArgs process_input(int argc, char **argv)
 {
-    InputArgs inputs = {105.0, 100, 0, 252, 6, 60, 'c'};
+    InputArgs inputs = {1, 105.0, 100, 0, 252, 6, 60, 'c'};
 
     if (argc > 1 && argv[1] != NULL)
         inputs.iterations = atoi(argv[1]);
     if (argc > 2 && argv[2] != NULL)
-        inputs.save_stats = atoi(argv[3]);
+        inputs.parallel = atoi(argv[2]);
     if (argc > 3 && argv[3] != NULL)
-        inputs.strike_price = atof(argv[3]);
+        inputs.save_stats = atoi(argv[3]);
     if (argc > 4 && argv[4] != NULL)
-        inputs.Days = atoi(argv[4]);
+        inputs.strike_price = atof(argv[4]);
     if (argc > 5 && argv[5] != NULL)
-        inputs.Hours = atoi(argv[5]);
+        inputs.Days = atoi(argv[5]);
     if (argc > 6 && argv[6] != NULL)
-        inputs.call_put = argv[6][0];
+        inputs.Hours = atoi(argv[6]);
+    if (argc > 7 && argv[7] != NULL)
+        inputs.call_put = argv[7][0];
 
     return inputs;
 }
