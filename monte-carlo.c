@@ -42,7 +42,7 @@ double monteCarlo(InputArgs inputs)
     Stats s;
 
 #pragma omp parallel if (inputs.parallel)
-#pragma omp for schedule(auto) firstprivate(inputs) private(payoff, s) reduction(+ : avg, counter)
+#pragma omp for schedule(runtime) firstprivate(inputs) private(payoff, s) reduction(+ : avg, counter)
     for (i = 0; i < inputs.iterations; i++)
     {
         s = NStepFuturePrice(inputs.Days, inputs.Hours, inputs.Minutes, file, i);
