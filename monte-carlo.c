@@ -41,7 +41,6 @@ double monteCarlo(InputArgs inputs)
     int i, counter = 0;
     Stats s;
 
-    omp_set_num_threads(500);
 #pragma omp parallel if (inputs.parallel)
 #pragma omp for schedule(auto) firstprivate(inputs) private(payoff, s) reduction(+ : avg, counter)
     for (i = 0; i < inputs.iterations; i++)

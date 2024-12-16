@@ -134,7 +134,7 @@ double calculatePayoff(double price, double strike_price, char action)
 
 void write_to_csv(FILE *file, Stats stats, int day)
 {
-    fprintf(file, "%d,%.2f,%.2f,%.2f,%.2f\n", day, stats.mean, stats.min, stats.max, stats.std_dev);
+    fprintf(file, "%d,%.2f,%.2f,%.2f,%.2f,%2f\n", day, stats.mean, stats.min, stats.max, stats.std_dev, stats.last_price);
 }
 
 /*
