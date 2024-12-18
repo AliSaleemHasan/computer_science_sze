@@ -49,25 +49,10 @@ typedef struct
 #define HOURS_SCALAR 0.0248   // sqrt(1/1638) 252 days * 6.5 hours
 #define MINUTES_SCALAR 0.0032 // sqrt(1/98280) 252 days * 6.5 hours * 60 minutes
 
-// look at the period of creating random numbers
-// calculate epsilon using standard normal distribuiton (epsilon) Marsaglia polar method
-// double generateRandomVariable()
-// {
-//     double u1 = (double)rand() / RAND_MAX, u2 = (double)rand() / RAND_MAX;
-//     double value = sqrtf((-2.0 * logf(u1))) * sinf(2 * M_PI * u2);
-//     return value;
-// }
-
 double generateRandomVariable()
 {
     double u1, u2, w, mult;
-    static double x1, x2;
-    static int call = 0;
-    if (call == 1)
-    {
-        call = !call;
-        return x2;
-    }
+    double x1, x2;
     do
     {
         u1 = 2.0 * rand() / RAND_MAX - 1.0;
@@ -77,8 +62,7 @@ double generateRandomVariable()
     mult = sqrt((-2.0 * log(w)) / w);
     x1 = u1 * mult;
     x2 = u2 * mult;
-    call = !call;
-    return x1;
+    return w > 0.5 ? x1 : x2;
 }
 int counter = 0;
 double getPriceatDeltaT(double deltaT, double s0, double mu, double sigma, char *resolution)
