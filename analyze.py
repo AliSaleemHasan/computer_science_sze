@@ -14,9 +14,9 @@ def get_schedule_stats(filepath):
         for schedule in ['static','dynamic','guided']:
           for chunk_size in [1,5,10,25,50,100,150,200,250,500]:
                 os.environ["OMP_SCHEDULE"] = f'{schedule},{chunk_size}'
-                ans = subprocess.check_output(['./monte-carlo.exe','2000'], text=True)
+                ans = subprocess.check_output(['./monte-carlo.exe','3000'], text=True)
                 time = re.findall(numerical_regix, ans)[1]
-                print(f"time elapsed for 2000 iteration with '{schedule},{chunk_size}' schedule is ${time}\n")
+                print(f"time elapsed for 3000 iteration with '{schedule},{chunk_size}' schedule is ${time}\n")
                 df_rows.append({'schedule':schedule,'chunk':chunk_size,'time':time})
         df = pd.DataFrame(df_rows)
         df.to_csv(filepath,index=False)
@@ -30,7 +30,7 @@ def get_schedule_stats(filepath):
 def get_speedup_stats(filepath):
     try:
         df_rows=[]
-        os.environ['OMP_SCHEDULE']='static,10'
+        os.environ['OMP_SCHEDULE']='static,5'
         os.environ["OMP_NUM_THREADS"] = '6'
         for iteration in range(100,2100,100):
             ans_serial = subprocess.check_output(['./monte-carlo.exe',str(iteration),'0'], text=True)
@@ -52,9 +52,9 @@ def plot_time_and_speedup(file_name,image):
     df = pd.read_csv(file_name)
     df['Speedup'] = df['time_serial'] / df['time_parallel']
     
-    fig, ax1 = plt.subplots(figsize=(10, 6))
-    ax1.bar(df['iteration'] - 10, df['time_serial'], width=20, label='Time Serial', alpha=0.7, color='b')
-    ax1.bar(df['iteration'] + 10, df['time_parallel'], width=20, label='Time Parallel', alpha=0.7, color='g')
+    fig, ax1 = plt.subplots(figsize=(10, 5))
+    ax1.bar(df['iteration'] - 10, df['time_serial'], width=20, label='Time Serial', alpha=0.7, color='purple')
+    ax1.bar(df['iteration'] + 10, df['time_parallel'], width=20, label='Time Parallel', alpha=0.7, color='blue')
     
     ax1.set_xlabel('Iterations')
     ax1.set_ylabel('Time (seconds)')
@@ -63,7 +63,7 @@ def plot_time_and_speedup(file_name,image):
     ax1.grid(True)
     
     ax2 = ax1.twinx()
-    ax2.plot(df['iteration'], df['Speedup'], label='Speedup', color='r', marker='o', linestyle='-', linewidth=2)
+    ax2.plot(df['iteration'], df['Speedup'], label='Speedup', color='deeppink', marker='o', linestyle='-', linewidth=2)
     ax2.set_ylabel('Speedup')
     ax2.legend(loc='upper right')
     
@@ -74,11 +74,11 @@ def plot_time_and_speedup(file_name,image):
 def get_threads_stats(filepath,iterations):
     try:
         df_rows = []
-        os.environ['OMP_SCHEDULE']='static,10'
+        os.environ['OMP_SCHEDULE']='static,5'
         for iteration in iterations:  
             os.environ["OMP_NUM_THREADS"] = str(iteration)
             print(f"Running with {iteration} threads...")
-            ans = subprocess.check_output(['./monte-carlo.exe','2000'], text=True)
+            ans = subprocess.check_output(['./monte-carlo.exe','3000'], text=True)
             time = re.findall(numerical_regix, ans)[1]
             df_rows.append({'Thread': iteration, 'Time': float(time)})
             print(f"time:{time}")
@@ -90,7 +90,7 @@ def get_threads_stats(filepath,iterations):
 def get_iterations_stats(filepath, iterations):
     try:
         df_rows = []
-        os.environ['OMP_SCHEDULE']='static,10'
+        os.environ['OMP_SCHEDULE']='static,5'
         os.environ["OMP_NUM_THREADS"] = '6'
         for iteration in iterations:  
             print(f"Running {iteration} iterations...")
@@ -110,10 +110,10 @@ def analyze_shcdules(data_path,image):
     guided = df[df['schedule']=='guided']
     static = df[df['schedule']=='static']
     dynamic = df[df['schedule']=='dynamic']
-    plt.figure(figsize=(10, 6))
-    plt.semilogy( guided['chunk'],guided['time'],  marker='o', color='red',label='guided')
+    plt.figure(figsize=(12, 6))
+    plt.semilogy( guided['chunk'],guided['time'],  marker='o', color='purple',label='guided')
     plt.semilogy( dynamic['chunk'],dynamic['time'], marker='o', color='blue',label='dynamic')
-    plt.semilogy( static['chunk'],static['time'], marker='o', color='green',label='static')
+    plt.semilogy( static['chunk'],static['time'], marker='o', color='deeppink',label='static')
     plt.xlabel('Chunk Size')
     plt.xticks(df['chunk'], rotation=90)
     plt.ylabel('Time Elapsed')

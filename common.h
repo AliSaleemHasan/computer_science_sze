@@ -51,6 +51,7 @@ typedef struct
 
 double generateRandomVariable()
 {
+
     double u1, u2, w, mult;
     double x1, x2;
     do
@@ -131,7 +132,7 @@ void write_to_csv(FILE *file, Stats stats, int day)
 
 FILE *create_statistcs_file(int save_stats)
 {
-    FILE *file = (save_stats) ? fopen("stats.csv", "w") : NULL;
+    FILE *file = (save_stats) ? fopen("./data/stats.csv", "w") : NULL;
     if (file)
         fprintf(file, "Day,Mean,Min,Max,Std Dev,End Price\n");
     return file;
@@ -192,8 +193,34 @@ typedef struct
     char call_put;
 } InputArgs;
 
+
+
+
+void print_help() {
+    printf("Usage: program [iterations] [parallel] [save_stats] [strike_price] [Days] [Hours] [call_put]\n");
+    printf("\nArguments:\n");
+    printf("  iterations    : Number of Monte-Carlo iterations - number of created paths(integer)\n");
+    printf("  parallel      : Parallel execution flag - 1 if you want to parallize the task - defaults to 1 - 0 for serial\n");
+    printf("  save_stats    : Save statistics flag - if you want to save statistics for each path (integer, 0 or 1) - defaults to 0\n");
+    printf("  strike_price  : Strike price  (floating-point number) - defaults to 105\n");
+    printf("  Days          : Number of days - in how many days you want your estimation to be (integer) - defaults to 252 \n");
+    printf("  Hours         : Number of hours - increasing or decreasing the resolution of monte-carlo - defaults to 6   (integer)\n");
+    printf("  call_put      : Stock call or put option - default to 'c' (character, 'c' or 'p')\n");
+    printf("\nExample for running 1000 iterations in parallel:\n");
+    printf("  ./program 1000\n");
+}
+
+
 InputArgs process_input(int argc, char **argv)
 {
+    for (int i = 1; i < argc; i++) 
+    { 
+        if (strcmp(argv[i], "--help") == 0) 
+         {
+         print_help(); 
+         exit(0);
+         } 
+    }
     InputArgs inputs = {1, 105.0, 100, 0, 252, 6, 60, 'c'};
 
     if (argc > 1 && argv[1] != NULL)
