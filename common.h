@@ -6,6 +6,8 @@
 #include <sys/time.h>
 #include <omp.h>
 #include <string.h>
+#include <getopt.h>
+
 
 /*
     ###################################################
@@ -44,6 +46,16 @@ typedef struct
     double std_dev;
     double last_price;
 } Stats;
+
+typedef struct
+{
+   double starting_price;
+   double mu;
+   double sigma;
+   double DeltaT;
+} MonteCarloConfigs;
+
+
 
 // scaling down
 #define HOURS_SCALAR 0.0248   // sqrt(1/1638) 252 days * 6.5 hours
@@ -130,6 +142,8 @@ void write_to_csv(FILE *file, Stats stats, int day)
     ###################################################
 */
 
+
+
 FILE *create_statistcs_file(int save_stats)
 {
     FILE *file = (save_stats) ? fopen("./data/stats.csv", "w") : NULL;
@@ -191,52 +205,108 @@ typedef struct
     int Hours;
     int Minutes;
     char call_put;
+    double startin_price;
+    double deltaT;
+    double mu;
+    double sigma;
 } InputArgs;
 
 
+typedef struct {
 
+    double startin_price;
+    double deltaT;
+    double mu;
+    double sigma;
+} Parameters;
 
+// Function to print help information
 void print_help() {
-    printf("Usage: program [iterations] [parallel] [save_stats] [strike_price] [Days] [Hours] [call_put]\n");
-    printf("\nArguments:\n");
-    printf("  iterations    : Number of Monte-Carlo iterations - number of created paths(integer)\n");
-    printf("  parallel      : Parallel execution flag - 1 if you want to parallize the task - defaults to 1 - 0 for serial\n");
-    printf("  save_stats    : Save statistics flag - if you want to save statistics for each path (integer, 0 or 1) - defaults to 0\n");
-    printf("  strike_price  : Strike price  (floating-point number) - defaults to 105\n");
-    printf("  Days          : Number of days - in how many days you want your estimation to be (integer) - defaults to 252 \n");
-    printf("  Hours         : Number of hours - increasing or decreasing the resolution of monte-carlo - defaults to 6   (integer)\n");
-    printf("  call_put      : Stock call or put option - default to 'c' (character, 'c' or 'p')\n");
-    printf("\nExample for running 1000 iterations in parallel:\n");
-    printf("  ./program 1000\n");
+    printf("Usage: program [options]\n");
+    printf("Options:\n");
+    printf("  -h, --help              Show this help message and exit\n");
+    printf("  -i, --iterations NUM    Number of iterations (default: 1000)\n");
+    printf("  -p, --parallel NUM      Number of parallel executions (default: 1)\n");
+    printf("  -s, --save-stats NUM    Save stats (default: 0)\n");
+    printf("  -m, --minutes DOUBLE    minutes in each  (default: 0.2)\n");
+    printf("  -k, --strike-price NUM  Strike price (default: 105.0)\n");
+    printf("  -d, --days NUM          Number of days (default: 252)\n");
+    printf("  -H, --hours NUM         Number of hours (default: 6)\n");
+    printf("  -c, --call-put CHAR     Call or put (default: 'c')\n");
+    printf("  -e, --expected-return DOUBLE     Expected Return of monte-carlo  (default: 0.1)\n");
+    printf("  -x, --initial-price DOUBLE     Starting price (default: 100.0)\n");
+    printf("  -v, --mu DOUBLE     Exprcted Volatility (default: 0.2)\n");
 }
 
+InputArgs process_input(int argc, char **argv) {
+    InputArgs inputs = {1, 105.0, 1000, 0, 252, 6, 60, 'c',100.0,(double)1.0/252.0,0.1,0.2};
+    
+    // Define the options
+    static struct option long_options[] = {
+        {"help", no_argument, 0, 'h'},
+        {"iterations", required_argument, 0, 'i'},
+        {"parallel", required_argument, 0, 'p'},
+        {"save-stats", required_argument, 0, 's'},
+        {"strike-price", required_argument, 0, 'k'},
+        {"days", required_argument, 0, 'd'},
+        {"hours", required_argument, 0, 'H'},
+        {"minutes", required_argument, 0, 'm'},
+        {"call-put", required_argument, 0, 'c'},
+        {"mu", required_argument, 0, 'm'},
+        {"starting-pirce", required_argument, 0, 'x'},
+        {"sigma", required_argument, 0, 'e'},
 
-InputArgs process_input(int argc, char **argv)
-{
-    for (int i = 1; i < argc; i++) 
-    { 
-        if (strcmp(argv[i], "--help") == 0) 
-         {
-         print_help(); 
-         exit(0);
-         } 
+        {0, 0, 0, 0}
+    };
+    
+    int option_index = 0;
+    int opt;
+    
+    while ((opt = getopt_long(argc, argv, "hi:p:s:k:d:H:c:e:x:m:v:", long_options, &option_index)) != -1) {
+        switch (opt) {
+            case 'h':
+                print_help();
+                exit(0);
+            case 'i':
+                inputs.iterations = atoi(optarg);
+                break;
+            case 'p':
+                inputs.parallel = atoi(optarg);
+                break;
+            case 's':
+                inputs.save_stats = atoi(optarg);
+                break;
+            case 'k':
+                inputs.strike_price = atof(optarg);
+                break;
+            case 'd':
+                inputs.Days = atoi(optarg);
+                break;
+            case 'H':
+                inputs.Hours = atoi(optarg);
+                break;
+            case 'c':
+                inputs.call_put = optarg[0];
+                break;
+            case 'm':
+                inputs.Minutes = atoi(optarg);
+                break;
+            case 'v':
+                inputs.sigma = atof(optarg);
+                break;
+            case 'x':
+                inputs.startin_price = atof(optarg);
+                break;
+            case 'e':
+                inputs.mu=atof(optarg);
+                break;
+            default:
+                print_help();
+                exit(1);
+        }
     }
-    InputArgs inputs = {1, 105.0, 100, 0, 252, 6, 60, 'c'};
 
-    if (argc > 1 && argv[1] != NULL)
-        inputs.iterations = atoi(argv[1]);
-    if (argc > 2 && argv[2] != NULL)
-        inputs.parallel = atoi(argv[2]);
-    if (argc > 3 && argv[3] != NULL)
-        inputs.save_stats = atoi(argv[3]);
-    if (argc > 4 && argv[4] != NULL)
-        inputs.strike_price = atof(argv[4]);
-    if (argc > 5 && argv[5] != NULL)
-        inputs.Days = atoi(argv[5]);
-    if (argc > 6 && argv[6] != NULL)
-        inputs.Hours = atoi(argv[6]);
-    if (argc > 7 && argv[7] != NULL)
-        inputs.call_put = argv[7][0];
-
+    inputs.deltaT = (double) 1.0/inputs.Days;
+    
     return inputs;
 }

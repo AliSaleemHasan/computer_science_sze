@@ -5,10 +5,13 @@
 #include "float.h"
 #include "math.h"
 
-double deltaT = 1.0 / 252.0; // one day
-double mu = 0.03;
+ // one day
+
+
 double starting_price = 100.0;
-double sigma = 0.5;
+double deltaT = 1.0/252.0;
+double mu = 0.1;
+double sigma = 0.2;
 
 Stats NStepFuturePrice(int D, int H, int M, FILE *file, int iteration)
 {
@@ -36,11 +39,9 @@ Stats NStepFuturePrice(int D, int H, int M, FILE *file, int iteration)
 double monteCarlo(InputArgs inputs)
 {
     FILE *file = create_statistcs_file(inputs.save_stats);
-
     double avg = 0.0, payoff;
     int i, counter = 0;
     Stats s;
-
 #pragma omp parallel if (inputs.parallel)
 #pragma omp for schedule(runtime) firstprivate(inputs) private(payoff, s) reduction(+ : avg, counter)
     for (i = 0; i < inputs.iterations; i++)
@@ -54,7 +55,6 @@ double monteCarlo(InputArgs inputs)
             counter++;
         }
     }
-
     return avg / counter;
 }
 
@@ -62,6 +62,12 @@ int main(int argc, char **argv)
 {
     seed_random();
     InputArgs inputs = process_input(argc, argv);
+
+    // double deltaT = 1.0 /(double)inputs.Days;
+    // double mu = 0.03;
+    // double starting_price = 100.0;
+    // double sigma = 0.5;
+
     double start = get_time();
     printf("avg payoff is %f \n", monteCarlo(inputs));
     double end = get_time();
