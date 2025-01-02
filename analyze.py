@@ -7,6 +7,7 @@ import argparse
 
 
 numerical_regix = r"\d+\.\d+"
+compiled_file= "./monte-carlo.exe"
 
 def get_schedule_stats(filepath):
     try:
@@ -14,7 +15,7 @@ def get_schedule_stats(filepath):
         for schedule in ['static','dynamic','guided']:
           for chunk_size in [1,5,10,25,50,100,150,200,250,500]:
                 os.environ["OMP_SCHEDULE"] = f'{schedule},{chunk_size}'
-                ans = subprocess.check_output(['./monte-carlo.exe','-i','3000'], text=True)
+                ans = subprocess.check_output([compiled_file,'-i','3000'], text=True)
                 time = re.findall(numerical_regix, ans)[1]
                 print(f"time elapsed for 3000 iteration with '{schedule},{chunk_size}' schedule is ${time}\n")
                 df_rows.append({'schedule':schedule,'chunk':chunk_size,'time':time})
@@ -33,8 +34,8 @@ def get_speedup_stats(filepath):
         os.environ['OMP_SCHEDULE']='static,5'
         os.environ["OMP_NUM_THREADS"] = '6'
         for iteration in range(100,2100,100):
-            ans_serial = subprocess.check_output(['./monte-carlo.exe','-i', str(iteration),'-p','0'], text=True)
-            ans_parallel = subprocess.check_output(['./monte-carlo.exe','-i',str(iteration)], text=True)
+            ans_serial = subprocess.check_output([compiled_file,'-i', str(iteration),'-p','0'], text=True)
+            ans_parallel = subprocess.check_output([compiled_file,'-i',str(iteration)], text=True)
             time_serial = re.findall(numerical_regix, ans_serial)[1]
             time_parallel = re.findall(numerical_regix, ans_parallel)[1]
             print(f"time elapsed for {iteration} iterations for: serial is {time_serial} and for parallel is {time_parallel}\n")
@@ -78,7 +79,7 @@ def get_threads_stats(filepath,iterations):
         for iteration in iterations:  
             os.environ["OMP_NUM_THREADS"] = str(iteration)
             print(f"Running with {iteration} threads...")
-            ans = subprocess.check_output(['./monte-carlo.exe','-i','3000'], text=True)
+            ans = subprocess.check_output([compiled_file,'-i','3000'], text=True)
             time = re.findall(numerical_regix, ans)[1]
             df_rows.append({'Thread': iteration, 'Time': float(time)})
             print(f"time:{time}")
@@ -94,7 +95,7 @@ def get_iterations_stats(filepath, iterations):
         os.environ["OMP_NUM_THREADS"] = '6'
         for iteration in iterations:  
             print(f"Running {iteration} iterations...")
-            ans = subprocess.check_output(['./monte-carlo.exe','-i',str(iteration)], text=True)
+            ans = subprocess.check_output([compiled_file,'-i',str(iteration)], text=True)
             numericals = re.findall(numerical_regix, ans)
             df_rows.append({'Iteration': iteration, 'Payoff Avg': float(numericals[0])})
             print(f"avg:{numericals[0]} , time:{numericals[1]}")
