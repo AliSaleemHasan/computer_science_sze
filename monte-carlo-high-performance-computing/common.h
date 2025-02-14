@@ -7,6 +7,7 @@
 #include <omp.h>
 #include <string.h>
 #include <getopt.h>
+#include <stdint.h>
 
 
 /*
@@ -61,23 +62,61 @@ typedef struct
 #define HOURS_SCALAR 0.0248   // sqrt(1/1638) 252 days * 6.5 hours
 #define MINUTES_SCALAR 0.0032 // sqrt(1/98280) 252 days * 6.5 hours * 60 minutes
 
-double generateRandomVariable()
-{
+// Thread-local storage for random states
+typedef struct {
+    uint64_t state;
+    double spare;
+    int has_spare;
+} RNGState;
 
-    double u1, u2, w, mult;
-    double x1, x2;
-    do
+extern RNGState rng_state;
+#pragma omp threadprivate(rng_state)
+
+// Initialize once per thread
+static void init_rng() {
+    static uint64_t master_seed = 0;
+    #pragma omp critical
     {
-        u1 = 2.0 * rand() / RAND_MAX - 1.0;
-        u2 = 2.0 * rand() / RAND_MAX - 1.0;
-        w = u1 * u1 + u2 * u2;
-    } while (w >= 1.0 || w == 0);
-    mult = sqrt((-2.0 * log(w)) / w);
-    x1 = u1 * mult;
-    x2 = u2 * mult;
-    return w > 0.5 ? x1 : x2;
+        if(master_seed == 0) {
+            // Cross-platform seed initialization
+            master_seed = (uint64_t)time(NULL) ^ (uint64_t)clock();
+            #ifdef _WIN32
+            master_seed ^= (uint64_t)GetCurrentProcessId();
+            #else
+            master_seed ^= (uint64_t)getpid();
+            #endif
+        }
+    }
+    rng_state.state = master_seed ^ (uint64_t)omp_get_thread_num();
+    rng_state.has_spare = 0;
 }
-int counter = 0;
+
+double generateRandomVariable() {
+    if(rng_state.state == 0) init_rng();
+    
+    // Fast Xorshift64* PRNG
+    rng_state.state ^= rng_state.state >> 12;
+    rng_state.state ^= rng_state.state << 25;
+    rng_state.state ^= rng_state.state >> 27;
+    const double u1 = (double)(rng_state.state * 0x2545F4914F6CDD1DUL) / 18446744073709551616.0;
+    
+    // Box-Muller transform with cached values
+    if(rng_state.has_spare) {
+        rng_state.has_spare = 0;
+        return rng_state.spare;
+    }
+    
+    const double u2 = (double)((rng_state.state * 0x2545F4914F6CDD1DUL) ^ 
+                              (rng_state.state >> 32)) / 18446744073709551616.0;
+    const double radius = sqrt(-2.0 * log(1.0 - u1));
+    const double theta = 2.0 * M_PI * u2;
+    
+    rng_state.spare = radius * sin(theta);
+    rng_state.has_spare = 1;
+    
+    return radius * cos(theta);
+}
+
 double getPriceatDeltaT(double deltaT, double s0, double mu, double sigma, char *resolution)
 {
 

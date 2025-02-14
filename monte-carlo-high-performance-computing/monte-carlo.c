@@ -7,7 +7,7 @@
 
  // one day
 
-
+RNGState rng_state = {0}; 
 double starting_price = 100.0;
 double deltaT = 1.0/252.0;
 double mu = 0.1;
