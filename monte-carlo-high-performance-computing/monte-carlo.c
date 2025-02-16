@@ -1,11 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include "string.h"
-#include "common.h"
-#include "float.h"
-#include "math.h"
+#include "utils.c"
 
- // one day
 
 RNGState rng_state = {0}; 
 double starting_price = 100.0;
@@ -16,7 +10,7 @@ double sigma = 0.2;
 Stats NStepFuturePrice(int D, int H, int M, FILE *file, int iteration)
 {
     double s0 = starting_price, total_price = 0.0, sum_of_squares = 0.0;
-    double min_price = DBL_MAX, max_price = -DBL_MAX, last_price;
+    double min_price = DBL_MAX, max_price = -DBL_MAX, last_price=0;
     int count = 0;
 
     for (int i = 0; i < D; i++)
@@ -62,12 +56,6 @@ int main(int argc, char **argv)
 {
     seed_random();
     InputArgs inputs = process_input(argc, argv);
-
-    // double deltaT = 1.0 /(double)inputs.Days;
-    // double mu = 0.03;
-    // double starting_price = 100.0;
-    // double sigma = 0.5;
-
     double start = get_time();
     printf("avg payoff is %f \n", monteCarlo(inputs));
     double end = get_time();

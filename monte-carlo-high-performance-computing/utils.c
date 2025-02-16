@@ -1,15 +1,6 @@
-#include <stdio.h>
-#include <time.h>
-#include <math.h>
-#include <unistd.h>
-#include <time.h>
-#include <sys/time.h>
-#include <omp.h>
-#include <string.h>
-#include <getopt.h>
-#include <stdint.h>
 
 
+#include "utils.h"
 /*
     ###################################################
     ###################################################
@@ -38,36 +29,6 @@ void seed_random()
     ###################################################
 */
 
-typedef struct
-{
-    int Day;
-    double mean;
-    double min;
-    double max;
-    double std_dev;
-    double last_price;
-} Stats;
-
-typedef struct
-{
-   double starting_price;
-   double mu;
-   double sigma;
-   double DeltaT;
-} MonteCarloConfigs;
-
-
-
-// scaling down
-#define HOURS_SCALAR 0.0248   // sqrt(1/1638) 252 days * 6.5 hours
-#define MINUTES_SCALAR 0.0032 // sqrt(1/98280) 252 days * 6.5 hours * 60 minutes
-
-// Thread-local storage for random states
-typedef struct {
-    uint64_t state;
-    double spare;
-    int has_spare;
-} RNGState;
 
 extern RNGState rng_state;
 #pragma omp threadprivate(rng_state)
@@ -234,32 +195,6 @@ double get_price_for_day(int H, int M, double s0, double deltaT, double mu, doub
     ###################################################
 */
 
-typedef struct
-{
-    int parallel;
-    double strike_price;
-    int iterations;
-    int save_stats;
-    int Days;
-    int Hours;
-    int Minutes;
-    char call_put;
-    double startin_price;
-    double deltaT;
-    double mu;
-    double sigma;
-} InputArgs;
-
-
-typedef struct {
-
-    double startin_price;
-    double deltaT;
-    double mu;
-    double sigma;
-} Parameters;
-
-// Function to print help information
 void print_help() {
     printf("Usage: program [options]\n");
     printf("Options:\n");
