@@ -7,7 +7,7 @@ import argparse
 
 
 numerical_regix = r"\d+\.\d+"
-compiled_file= "./monte-carlo.exe"
+compiled_file= "./monte-carlo"
 
 def get_schedule_stats(filepath):
     try:
