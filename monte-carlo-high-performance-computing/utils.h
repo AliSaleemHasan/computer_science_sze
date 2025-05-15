@@ -10,7 +10,7 @@
 #include <getopt.h>
 #include <stdint.h>
 #include <stdlib.h>
-
+#include <mpi.h>
 // Structs
 typedef struct
 {
