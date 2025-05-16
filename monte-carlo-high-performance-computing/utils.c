@@ -284,3 +284,60 @@ InputArgs process_input(int argc, char **argv) {
     
     return inputs;
 }
+
+/*
+    ###################################################
+    ###################################################
+    			MPI helper functions
+    ###################################################
+    ###################################################
+*/
+
+int get_process_iterations(int iterations, int rank, int size){
+
+	int process_iterations = iterations / size;
+	if(rank+1 == size) process_iterations+=(iterations % size);
+
+	return process_iterations;
+}
+
+
+void mpi_save_stats(char* filename,char *process_csv,int rank){
+    // Compute the length (in bytes) of the process CSV data.
+	int process_csv_length = strlen(process_csv);
+
+	// Determine the offset into the file by gathering the lengths.
+	// use MPI_Exscan to compute the prefix sum.
+	int prefix_length = 0;
+	MPI_Exscan(&process_csv_length, &prefix_length, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+	if (rank == 0)
+		prefix_length = 0;  // Process 0 has no predecessor.
+
+	// We'll output a header only once at the beginning of the file.
+	char* header = "Day,mean,min,max,std_dev,last_price\n";
+	int header_len = strlen(header);
+
+	//                 // Open the output file collectively.
+	MPI_File fh;
+	MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
+
+	// Let the root process write the header at the very beginning.
+	if (rank == 0) {
+		MPI_File_write_at(fh, 0, header, header_len, MPI_CHAR, MPI_STATUS_IGNORE);
+	}
+
+	// Synchronize all processes so that the header is written.
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	// Calculate each process’s file offset.
+	// We add header_len to every process's offset so that data is written after the header.
+	MPI_Offset offset = header_len + prefix_length;
+
+	// Each process writes its CSV string at its computed offset using MPI I/O.
+	MPI_File_write_at_all(fh, offset, process_csv, process_csv_length, MPI_CHAR, MPI_STATUS_IGNORE);
+
+	MPI_File_close(&fh);
+    
+	free(process_csv);
+ 
+}

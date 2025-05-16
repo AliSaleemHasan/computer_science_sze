@@ -83,3 +83,12 @@ InputArgs process_input(int argc, char **argv);
 
 extern RNGState rng_state;
 #pragma omp threadprivate(rng_state)
+
+//**********************
+// MPI helper functions
+//**********************
+
+int get_process_iterations(int iterations, int rank , int size);
+void mpi_save_stats(char *filename, char *process_csv,int rank);
+
+
